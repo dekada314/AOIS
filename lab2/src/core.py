@@ -9,7 +9,7 @@ _RIGHT_ASSOC = {"!", "->"}
 class CoreEngine:
     def __init__(self, expression: str):
         self.set_expression(expression)
-
+        
     def set_expression(self, expression: str) -> None:
         normalized = self.normalize_expression(expression)
         tokens = self.tokenize(normalized)

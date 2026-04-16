@@ -157,7 +157,6 @@ def run_menu() -> None:
                 print(f"Производная по {derivative['variables']}")
                 print(f"Вектор: {''.join(str(v) for v in derivative['truth_vector'])}")
                 print(f"СДНФ: {derivative['sdnf']}")
-                print(f"СКНФ: {derivative['sknf']}")
 
             elif choice == "10":
                 curr = _require_engine(engine)
