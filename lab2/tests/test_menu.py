@@ -45,3 +45,27 @@ def test_menu_requires_expression(monkeypatch, capsys):
     main.run_menu()
     out = capsys.readouterr().out
     assert "Сначала выберите пункт 1" in out
+
+
+def test_menu_full_report_option(monkeypatch, capsys):
+    answers = iter(["1", "a|b", "13", "a", "0"])
+    monkeypatch.setattr("builtins.input", lambda _: next(answers))
+
+    main.run_menu()
+    out = capsys.readouterr().out
+
+    assert "13. Вывести все пункты" in out
+    assert "=== Полный отчет ===" in out
+    assert "[2] Таблица истинности" in out
+    assert "[3] СДНФ и СКНФ" in out
+    assert "[4] Числовая форма СДНФ и СКНФ" in out
+    assert "[5] Индексная форма" in out
+    assert "[6] Классы Поста" in out
+    assert "[7] Полином Жегалкина" in out
+    assert "[8] Фиктивные переменные" in out
+    assert "[9] Булева дифференциация" in out
+    assert "[10] Минимизация расчетным методом" in out
+    assert "[11] Минимизация расчетно-табличным методом" in out
+    assert "[12] Минимизация табличным методом (Карта Карно)" in out
+    assert "Минимальная ДНФ:" in out
+    assert "Минимальная КНФ:" in out

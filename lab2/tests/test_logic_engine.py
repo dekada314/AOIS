@@ -46,3 +46,14 @@ def test_karnaugh_output():
 
     assert result["dnf"]["result_expression"] in {"a|b", "b|a"}
     assert result["knf"]["result_expression"] == "(a|b)"
+
+
+def test_boolean_derivative_returns_minimal_sdnf_without_derivative_variable():
+    engine = LogicEngine("a&b")
+
+    derivative = engine.boolean_derivative(["a"])
+
+    assert derivative["truth_vector"] == [0, 1, 0, 1]
+    assert derivative["result_variables"] == ["b"]
+    assert derivative["result_truth_vector"] == [0, 1]
+    assert derivative["sdnf"] == "b"

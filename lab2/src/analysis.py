@@ -200,6 +200,74 @@ class AnalysisMixin:
 
         return fictive
 
+    def _derivative_reduced_forms(
+        self,
+        values: list[int],
+        derivative_vars: list[str],
+    ) -> dict[str, object]:
+        derivative_set = set(derivative_vars)
+        reduced_variables = [var for var in self.variables if var not in derivative_set]
+
+        if not reduced_variables:
+            value = values[0]
+            return {
+                "variables": reduced_variables,
+                "truth_vector": [value],
+                "sdnf": "1" if value == 1 else "0",
+                "sknf": "1" if value == 1 else "0",
+                "minterms": [0] if value == 1 else [],
+                "maxterms": [0] if value == 0 else [],
+            }
+
+        reduced_vector: list[int] = []
+        reduced_minterms: list[int] = []
+        reduced_maxterms: list[int] = []
+
+        for reduced_index in range(1 << len(reduced_variables)):
+            reduced_bits = format(reduced_index, f"0{len(reduced_variables)}b")
+            assignment: dict[str, int] = {}
+            bit_pos = 0
+            for var in self.variables:
+                if var in derivative_set:
+                    assignment[var] = 0
+                else:
+                    assignment[var] = int(reduced_bits[bit_pos])
+                    bit_pos += 1
+
+            full_index = self._index_from_assignment(assignment)
+            value = values[full_index]
+            reduced_vector.append(value)
+            if value == 1:
+                reduced_minterms.append(reduced_index)
+            else:
+                reduced_maxterms.append(reduced_index)
+
+        if reduced_minterms:
+            original_variables = self.variables
+            try:
+                self.variables = reduced_variables
+                engine = self._minimize_dnf(reduced_minterms, include_table=False)
+            finally:
+                self.variables = original_variables
+            sdnf = engine["result_expression"]
+        else:
+            sdnf = "0"
+
+        if reduced_maxterms:
+            clauses = [self._clause_from_bits(format(i, f"0{len(reduced_variables)}b"), reduced_variables) for i in reduced_maxterms]
+            sknf = "&".join(clauses)
+        else:
+            sknf = "1"
+
+        return {
+            "variables": reduced_variables,
+            "truth_vector": reduced_vector,
+            "sdnf": sdnf,
+            "sknf": sknf,
+            "minterms": reduced_minterms,
+            "maxterms": reduced_maxterms,
+        }
+
     def boolean_derivative(self, derivative_vars: list[str]) -> dict[str, object]:
         if not derivative_vars:
             raise ValueError("Нужно передать хотя бы одну переменную")
@@ -222,12 +290,14 @@ class AnalysisMixin:
                 new_values[mask] = values[mask] ^ values[mask ^ bit]
             values = new_values
 
-        forms = self._forms_for_vector(values)
+        reduced_forms = self._derivative_reduced_forms(values, derivative_vars)
         return {
             "variables": derivative_vars,
             "truth_vector": values,
-            "sdnf": forms["sdnf"],
-            "sknf": forms["sknf"],
-            "minterms": forms["minterms"],
-            "maxterms": forms["maxterms"],
+            "sdnf": reduced_forms["sdnf"],
+            "sknf": reduced_forms["sknf"],
+            "minterms": reduced_forms["minterms"],
+            "maxterms": reduced_forms["maxterms"],
+            "result_variables": reduced_forms["variables"],
+            "result_truth_vector": reduced_forms["truth_vector"],
         }

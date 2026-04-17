@@ -4,7 +4,7 @@ from lab2.src.logic_engine import LogicEngine
 
 
 def _print_menu() -> None:
-    print("\n=== LAB2 MENU ===")
+    print("\n=== Меню ===")
     print("1. Ввести логическую функцию")
     print("2. Построить таблицу истинности")
     print("3. Построить СДНФ и СКНФ")
@@ -17,6 +17,7 @@ def _print_menu() -> None:
     print("10. Минимизация расчетным методом")
     print("11. Минимизация расчетно-табличным методом")
     print("12. Минимизация табличным методом (Карта Карно)")
+    print("13. Вывести все пункты")
     print("0. Выход")
 
 
@@ -73,6 +74,79 @@ def _print_karnaugh(kmap: dict[str, object]) -> None:
         print("      " + " ".join(kmap["col_labels"]))
         for i, row in enumerate(kmap["maps"][layer]):
             print(f"{kmap['row_labels'][i]:>4}  " + " ".join(str(v) for v in row))
+
+
+def _print_full_report(engine: LogicEngine, derivative_vars: list[str]) -> None:
+    print("\n=== Полный отчет ===")
+    print("\n[2] Таблица истинности")
+    _print_truth_table(engine)
+
+    print("\n[3] СДНФ и СКНФ")
+    forms = engine.canonical_forms()
+    print(f"СДНФ: {forms['sdnf']}")
+    print(f"СКНФ: {forms['sknf']}")
+
+    print("\n[4] Числовая форма СДНФ и СКНФ")
+    numeric = engine.numeric_forms()
+    print(f"СДНФ числа: {numeric['sdnf_numbers']}")
+    print(f"СКНФ числа: {numeric['sknf_numbers']}")
+    print(f"СДНФ: {numeric['sdnf_numeric']}")
+    print(f"СКНФ: {numeric['sknf_numeric']}")
+
+    print("\n[5] Индексная форма")
+    index = engine.index_form()
+    print(f"Вектор: {index['vector']}")
+    print(f"Индекс: {index['index']}")
+
+    print("\n[6] Классы Поста")
+    classes = engine.post_classes()
+    for name in ["T0", "T1", "S", "M", "L"]:
+        print(f"{name}: {classes[name]}")
+
+    print("\n[7] Полином Жегалкина")
+    poly = engine.zhegalkin_polynomial()
+    print(f"Полином Жегалкина: {poly['polynomial']}")
+
+    print("\n[8] Фиктивные переменные")
+    fake = engine.fictive_variables()
+    print(f"Фиктивные переменные: {fake if fake else 'нет'}")
+
+    print("\n[9] Булева дифференциация")
+    derivative = engine.boolean_derivative(derivative_vars)
+    print(f"Производная по {derivative['variables']}")
+    print(f"Вектор: {''.join(str(v) for v in derivative['truth_vector'])}")
+    print(f"СДНФ: {derivative['sdnf']}")
+    print(f"СКНФ: {derivative['sknf']}")
+
+    print("\n[10] Минимизация расчетным методом")
+    calc = engine.minimize_calculation()
+    print("ДНФ:")
+    for idx, stage in enumerate(calc["dnf"]["stages"], start=1):
+        print(f"Стадия {idx}: {stage}")
+    print(f"Результат: {calc['dnf']['result_expression']}")
+    print("КНФ:")
+    for idx, stage in enumerate(calc["knf"]["stages"], start=1):
+        print(f"Стадия {idx}: {stage}")
+    print(f"Результат: {calc['knf']['result_expression']}")
+
+    print("\n[11] Минимизация расчетно-табличным методом")
+    calc_table = engine.minimize_calculation_table()
+    print("ДНФ:")
+    for idx, stage in enumerate(calc_table["dnf"]["stages"], start=1):
+        print(f"Стадия {idx}: {stage}")
+    _print_prime_table(calc_table["dnf"]["table"])
+    print(f"Результат: {calc_table['dnf']['result_expression']}")
+    print("КНФ:")
+    for idx, stage in enumerate(calc_table["knf"]["stages"], start=1):
+        print(f"Стадия {idx}: {stage}")
+    _print_prime_table(calc_table["knf"]["table"])
+    print(f"Результат: {calc_table['knf']['result_expression']}")
+
+    print("\n[12] Минимизация табличным методом (Карта Карно)")
+    karnaugh = engine.minimize_karnaugh()
+    _print_karnaugh(karnaugh["map"])
+    print(f"Минимальная ДНФ: {karnaugh['dnf']['result_expression']}")
+    print(f"Минимальная КНФ: {karnaugh['knf']['result_expression']}")
 
 
 def run_menu() -> None:
@@ -197,8 +271,18 @@ def run_menu() -> None:
                 print(f"Минимальная ДНФ: {result['dnf']['result_expression']}")
                 print(f"Минимальная КНФ: {result['knf']['result_expression']}")
 
+            elif choice == "13":
+                curr = _require_engine(engine)
+                if curr is None:
+                    continue
+                raw = input(
+                    "Введите переменные для булевой дифференциации через пробел: "
+                ).strip().replace(",", " ")
+                derivative_vars = [x.lower() for x in raw.split() if x]
+                _print_full_report(curr, derivative_vars)
+
             else:
-                print("Пункт должен быть от 0 до 12.")
+                print("Пункт должен быть от 0 до 13.")
 
         except Exception as exc:
             print(f"Ошибка: {exc}")
