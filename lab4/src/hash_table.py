@@ -36,7 +36,7 @@ class HashTable:
         hash_address = self._define_index(hash_value)
 
         curr_row = self.rows[hash_address]
-        if curr_row.u == 0:
+        if curr_row.u == 0 or curr_row.d == 1:
             self._fill_row(hash_address, key_word, value)
             return hash_address, key_word, value
 
@@ -46,18 +46,20 @@ class HashTable:
         initial_address = hash_address
         hash_address = (hash_address + 1) % self.size
 
-        while self.rows[hash_address].u != 0 and initial_address != hash_address:
-            row = self.rows[hash_address]
-            if row.id == key_word and row.d == 0:
+        while True:
+            curr_row = self.rows[hash_address]
+
+            if (curr_row.id == key_word and curr_row.d == 0) or (
+                initial_address == hash_address
+            ):
                 return None
+
+            if curr_row.u == 0 or curr_row.d == 1:
+                inserted_row = self._fill_row(hash_address, key_word, value)
+                inserted_row.c = 1
+                return hash_address, key_word, value
+
             hash_address = (hash_address + 1) % self.size
-
-        if self.rows[hash_address].u == 0:
-            inserted_row = self._fill_row(hash_address, key_word, value)
-            inserted_row.c = 1
-            return hash_address, key_word, value
-
-        return None
 
     def search(self, key_word: str) -> tuple[int, str, str] | None:
         hash_value = self._calc_hash(key_word)
